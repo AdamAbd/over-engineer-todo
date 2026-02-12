@@ -1,0 +1,507 @@
+<script setup lang="ts">
+  import { PencilLine, Plus, Trash2 } from 'lucide-vue-next'
+  import { z } from 'zod'
+
+  type TodoStatus = 'backlog' | 'in_progress' | 'done'
+
+  interface TodoItem {
+    id: string
+    title: string
+    description: string
+    status: TodoStatus
+    image_url: string
+    jsonb: unknown
+    created_at: string
+  }
+
+  interface TodoFormModel {
+    title: string
+    description: string
+    status: TodoStatus
+    image_url: string
+    jsonb_text: string
+  }
+
+  useHead({
+    title: 'Home Todo | Over Engineer Todo',
+    meta: [
+      {
+        name: 'description',
+        content:
+          'Kelola backlog, in-progress, dan done dari satu board. Tambah dan update todo lewat dialog dengan field jsonb dan image url.',
+      },
+    ],
+  })
+
+  const statusOrder = ['backlog', 'in_progress', 'done'] as const
+
+  const statusMeta: Record<
+    TodoStatus,
+    {
+      label: string
+      panelClass: string
+      textClass: string
+      accentClass: string
+    }
+  > = {
+    backlog: {
+      label: 'Backlog',
+      panelClass: 'bg-white/6',
+      textClass: 'text-white/85',
+      accentClass: 'text-white/70',
+    },
+    in_progress: {
+      label: 'In Progress',
+      panelClass: 'bg-[color:var(--lp-teal)]/90',
+      textClass: 'text-white',
+      accentClass: 'text-white/75',
+    },
+    done: {
+      label: 'Done',
+      panelClass: 'bg-[color:var(--lp-orange)]/92',
+      textClass: 'text-white',
+      accentClass: 'text-white/75',
+    },
+  }
+
+  const todoFormSchema = z.object({
+    title: z.string().trim().min(1, 'Judul todo wajib diisi'),
+    description: z.string().trim().max(500, 'Deskripsi maksimal 500 karakter'),
+    status: z.enum(statusOrder),
+    image_url: z
+      .string()
+      .trim()
+      .refine((value) => value.length === 0 || z.string().url().safeParse(value).success, {
+        message: 'Image URL harus kosong atau berupa URL valid',
+      }),
+    jsonb_text: z
+      .string()
+      .trim()
+      .refine((value) => {
+        try {
+          JSON.parse(value)
+          return true
+        } catch {
+          return false
+        }
+      }, 'Field JSONB harus berformat JSON valid'),
+  })
+
+  const todos = ref<TodoItem[]>([
+    {
+      id: crypto.randomUUID(),
+      title: 'Refactor auth flow',
+      description: 'Pisahkan handler auth agar login/register lebih mudah dites.',
+      status: 'backlog',
+      image_url:
+        'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=900&q=80',
+      jsonb: {
+        priority: 'high',
+        estimate: 5,
+        tags: ['auth', 'refactor'],
+      },
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: crypto.randomUUID(),
+      title: 'Landing page revamp',
+      description: 'Rapikan hierarchy konten hero dan optimalkan CTA.',
+      status: 'in_progress',
+      image_url:
+        'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80',
+      jsonb: {
+        owner: 'design',
+        sprint: 7,
+        checkpoints: ['hero', 'stats', 'cta'],
+      },
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: crypto.randomUUID(),
+      title: 'Setup test suite',
+      description: 'Aktifkan test unit + e2e untuk flow login.',
+      status: 'done',
+      image_url:
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=900&q=80',
+      jsonb: {
+        coverage_target: 80,
+        ci: true,
+      },
+      created_at: new Date().toISOString(),
+    },
+  ])
+
+  const dialogOpen = ref(false)
+  const dialogMode = ref<'create' | 'edit'>('create')
+  const editingTodoId = ref<string | null>(null)
+  const formError = ref('')
+
+  const form = reactive<TodoFormModel>({
+    title: '',
+    description: '',
+    status: 'backlog',
+    image_url: '',
+    jsonb_text: '{\n  "priority": "medium",\n  "tags": []\n}',
+  })
+
+  const boardColumns = computed(() =>
+    statusOrder.map((status) => ({
+      status,
+      ...statusMeta[status],
+      items: todos.value.filter((todo) => todo.status === status),
+    }))
+  )
+
+  const totalTodos = computed(() => todos.value.length)
+  const doneCount = computed(() => todos.value.filter((todo) => todo.status === 'done').length)
+
+  const formatJsonb = (value: unknown) => JSON.stringify(value, null, 2)
+
+  const jsonSummary = (value: unknown) => {
+    if (value === null) {
+      return 'null'
+    }
+
+    if (Array.isArray(value)) {
+      return `array (${value.length})`
+    }
+
+    if (typeof value === 'object') {
+      return `object (${Object.keys(value as Record<string, unknown>).length} key)`
+    }
+
+    return typeof value
+  }
+
+  const resetForm = (status: TodoStatus = 'backlog') => {
+    form.title = ''
+    form.description = ''
+    form.status = status
+    form.image_url = ''
+    form.jsonb_text = '{\n  "priority": "medium",\n  "tags": []\n}'
+    formError.value = ''
+  }
+
+  const openCreateDialog = (status: TodoStatus = 'backlog') => {
+    dialogMode.value = 'create'
+    editingTodoId.value = null
+    resetForm(status)
+    dialogOpen.value = true
+  }
+
+  const openEditDialog = (todo: TodoItem) => {
+    dialogMode.value = 'edit'
+    editingTodoId.value = todo.id
+    form.title = todo.title
+    form.description = todo.description
+    form.status = todo.status
+    form.image_url = todo.image_url
+    form.jsonb_text = formatJsonb(todo.jsonb)
+    formError.value = ''
+    dialogOpen.value = true
+  }
+
+  const removeTodo = (todoId: string) => {
+    todos.value = todos.value.filter((todo) => todo.id !== todoId)
+  }
+
+  const submitTodo = () => {
+    const parsedForm = todoFormSchema.safeParse(form)
+    if (!parsedForm.success) {
+      formError.value = parsedForm.error.issues[0]?.message ?? 'Form todo tidak valid'
+      return
+    }
+
+    const parsedJsonb = JSON.parse(parsedForm.data.jsonb_text)
+
+    if (dialogMode.value === 'create') {
+      const newTodo: TodoItem = {
+        id: crypto.randomUUID(),
+        title: parsedForm.data.title,
+        description: parsedForm.data.description,
+        status: parsedForm.data.status,
+        image_url: parsedForm.data.image_url,
+        jsonb: parsedJsonb,
+        created_at: new Date().toISOString(),
+      }
+
+      todos.value = [newTodo, ...todos.value]
+    } else if (editingTodoId.value) {
+      todos.value = todos.value.map((todo) => {
+        if (todo.id !== editingTodoId.value) {
+          return todo
+        }
+
+        return {
+          ...todo,
+          title: parsedForm.data.title,
+          description: parsedForm.data.description,
+          status: parsedForm.data.status,
+          image_url: parsedForm.data.image_url,
+          jsonb: parsedJsonb,
+        }
+      })
+    }
+
+    dialogOpen.value = false
+  }
+
+  watch(dialogOpen, (isOpen) => {
+    if (!isOpen) {
+      formError.value = ''
+    }
+  })
+</script>
+
+<template>
+  <div class="px-6 pb-16 md:px-10 md:pb-24">
+    <section class="mx-auto w-full max-w-6xl pt-6 md:pt-12">
+      <div class="reveal space-y-7">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span
+              class="border-border inline-flex items-center rounded-full border bg-white/80 px-4 py-1 text-xs font-bold tracking-[0.14em] uppercase"
+            >
+              Todo Workspace
+            </span>
+            <h1
+              class="mt-4 font-['Space_Grotesk','Manrope',sans-serif] text-4xl leading-[1.05] font-black tracking-tight text-[var(--lp-ink)] md:text-5xl"
+            >
+              Sprint Board untuk backlog, progress, dan done.
+            </h1>
+            <p class="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--lp-soft)] md:text-base">
+              Tambah atau update todo langsung dari dialog. Setiap todo punya field
+              <code>jsonb</code> dan <code>image_url</code> supaya siap dihubungkan ke backend +
+              CDN.
+            </p>
+          </div>
+
+          <Button size="lg" class="gap-2" @click="openCreateDialog()">
+            <Plus class="size-4" />
+            Tambah Todo
+          </Button>
+        </div>
+
+        <div class="grid max-w-2xl grid-cols-2 gap-3">
+          <article class="border-border rounded-2xl border bg-white/70 px-4 py-3 backdrop-blur-sm">
+            <p
+              class="font-['Space_Grotesk','Manrope',sans-serif] text-2xl font-bold text-[var(--lp-ink)]"
+            >
+              {{ totalTodos }}
+            </p>
+            <p class="text-xs leading-tight text-[var(--lp-soft)]">Total todo aktif</p>
+          </article>
+          <article class="border-border rounded-2xl border bg-white/70 px-4 py-3 backdrop-blur-sm">
+            <p
+              class="font-['Space_Grotesk','Manrope',sans-serif] text-2xl font-bold text-[var(--lp-ink)]"
+            >
+              {{ doneCount }}
+            </p>
+            <p class="text-xs leading-tight text-[var(--lp-soft)]">Todo selesai</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="mx-auto mt-8 w-full max-w-6xl">
+      <div
+        class="reveal relative overflow-hidden rounded-4xl border border-black/10 bg-[#151515] p-4 shadow-[0_24px_60px_rgba(16,17,14,0.26)] delay-1 md:p-6"
+      >
+        <div
+          class="mb-5 flex items-center justify-between text-[11px] tracking-[0.16em] text-white/70 uppercase"
+        >
+          <span>Sprint Board</span>
+          <span>Week 07</span>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-3">
+          <section
+            v-for="column in boardColumns"
+            :key="column.status"
+            class="min-h-[360px] rounded-3xl p-4"
+            :class="column.panelClass"
+          >
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <h2
+                  class="text-sm font-semibold tracking-[0.12em] uppercase"
+                  :class="column.textClass"
+                >
+                  {{ column.label }}
+                </h2>
+                <p class="text-xs" :class="column.accentClass">{{ column.items.length }} item</p>
+              </div>
+              <Button
+                size="icon-sm"
+                variant="secondary"
+                class="bg-white/90 text-black hover:bg-white"
+                @click="openCreateDialog(column.status)"
+              >
+                <Plus class="size-4" />
+              </Button>
+            </div>
+
+            <div class="space-y-3">
+              <article
+                v-for="todo in column.items"
+                :key="todo.id"
+                class="rounded-2xl bg-white px-3 py-3 text-[#272727] shadow-[0_10px_22px_rgba(0,0,0,0.12)]"
+              >
+                <NuxtImg
+                  v-if="todo.image_url"
+                  :src="todo.image_url"
+                  :alt="`Preview untuk ${todo.title}`"
+                  class="mb-3 h-24 w-full rounded-xl border border-black/5 object-cover"
+                  loading="lazy"
+                  sizes="sm:100vw md:33vw"
+                />
+
+                <h3 class="text-sm leading-snug font-semibold">
+                  {{ todo.title }}
+                </h3>
+                <p
+                  v-if="todo.description"
+                  class="mt-1 line-clamp-3 text-xs leading-relaxed text-[#4b4b4b]"
+                >
+                  {{ todo.description }}
+                </p>
+
+                <div class="mt-3 rounded-lg bg-[#f5f5f5] px-2 py-2">
+                  <p class="text-[11px] font-medium text-[#616161]">
+                    jsonb: {{ jsonSummary(todo.jsonb) }}
+                  </p>
+                  <pre class="mt-1 line-clamp-3 text-[11px] leading-relaxed text-[#4b4b4b]">{{
+                    formatJsonb(todo.jsonb)
+                  }}</pre>
+                </div>
+
+                <div class="mt-3 flex items-center justify-between gap-2">
+                  <Button size="sm" variant="outline" class="gap-1.5" @click="openEditDialog(todo)">
+                    <PencilLine class="size-3.5" />
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    class="text-red-600 hover:text-red-700"
+                    @click="removeTodo(todo.id)"
+                  >
+                    <Trash2 class="size-3.5" />
+                  </Button>
+                </div>
+              </article>
+
+              <article
+                v-if="column.items.length === 0"
+                class="rounded-2xl border border-dashed border-white/35 bg-white/8 px-3 py-5 text-center text-xs text-white/80"
+              >
+                Belum ada todo di kolom ini.
+              </article>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <Dialog v-model:open="dialogOpen">
+      <DialogContent
+        class="max-h-[85vh] w-full overflow-y-auto border-black/10 bg-white/95 shadow-[0_20px_55px_rgba(20,24,22,0.2)] sm:max-w-2xl"
+      >
+        <DialogHeader>
+          <DialogTitle class="font-['Space_Grotesk','Manrope',sans-serif] text-2xl">
+            {{ dialogMode === 'create' ? 'Tambah Todo Baru' : 'Update Todo' }}
+          </DialogTitle>
+          <DialogDescription>
+            Isi data task, termasuk field JSONB dan image URL untuk preview CDN.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form class="space-y-4" @submit.prevent="submitTodo">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="space-y-2">
+              <Label for="todo-title">Judul</Label>
+              <Input
+                id="todo-title"
+                v-model="form.title"
+                type="text"
+                placeholder="Contoh: Integrasi auth middleware"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="todo-status">Status</Label>
+              <NativeSelect id="todo-status" v-model="form.status" class="w-full">
+                <option value="backlog">Backlog</option>
+                <option value="in_progress">In Progress</option>
+                <option value="done">Done</option>
+              </NativeSelect>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="todo-description">Deskripsi</Label>
+            <Textarea
+              id="todo-description"
+              v-model="form.description"
+              placeholder="Catatan singkat task yang mau dikerjakan"
+              class="min-h-24"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <Label for="todo-image-url">Image URL (Cloudflare CDN)</Label>
+            <Input
+              id="todo-image-url"
+              v-model="form.image_url"
+              type="url"
+              placeholder="https://cdn.example.com/todos/card-01.webp"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <Label for="todo-jsonb">JSONB</Label>
+            <Textarea
+              id="todo-jsonb"
+              v-model="form.jsonb_text"
+              placeholder='{"priority":"high","estimate":5}'
+              class="min-h-40 font-mono text-xs"
+            />
+          </div>
+
+          <p
+            v-if="formError"
+            class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          >
+            {{ formError }}
+          </p>
+
+          <DialogFooter class="gap-2">
+            <Button type="button" variant="outline" @click="dialogOpen = false">Batal</Button>
+            <Button type="submit">
+              {{ dialogMode === 'create' ? 'Simpan Todo' : 'Simpan Perubahan' }}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  </div>
+</template>
+
+<style scoped>
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: reveal 720ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  }
+
+  .delay-1 {
+    animation-delay: 140ms;
+  }
+
+  @keyframes reveal {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

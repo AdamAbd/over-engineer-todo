@@ -16,7 +16,7 @@
   <DialogDescription
     data-slot="dialog-description"
     v-bind="forwardedProps"
-    :class="cn('text-muted-foreground text-sm', props.class)"
+    :class="cn('text-accent-foreground text-sm', props.class)"
   >
     <slot />
   </DialogDescription>
