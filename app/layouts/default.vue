@@ -1,3 +1,32 @@
+<script setup lang="ts">
+import { authClient } from '~/lib/auth-client'
+
+const session = authClient.useSession()
+const isSigningOut = ref(false)
+
+const isAuthenticated = computed(() => Boolean(session.value.data?.user))
+
+const handleLogout = async () => {
+  if (isSigningOut.value) {
+    return
+  }
+
+  isSigningOut.value = true
+
+  try {
+    const response = await authClient.signOut()
+
+    if (response.error) {
+      return
+    }
+
+    await navigateTo('/login')
+  } finally {
+    isSigningOut.value = false
+  }
+}
+</script>
+
 <template>
   <div class="landing-shell relative flex min-h-screen flex-col overflow-x-clip">
     <div class="pointer-events-none absolute inset-0 overflow-hidden">
@@ -19,12 +48,19 @@
           </p>
         </a>
         <div class="flex items-center gap-2">
-          <Button as-child variant="outline">
-            <NuxtLink to="/login">Login</NuxtLink>
-          </Button>
-          <Button as-child>
-            <NuxtLink to="/register">Mulai</NuxtLink>
-          </Button>
+          <template v-if="isAuthenticated">
+            <Button type="button" variant="outline" :disabled="isSigningOut" @click="handleLogout">
+              {{ isSigningOut ? 'Keluar...' : 'Logout' }}
+            </Button>
+          </template>
+          <template v-else>
+            <Button as-child variant="outline">
+              <NuxtLink to="/login">Login</NuxtLink>
+            </Button>
+            <Button as-child>
+              <NuxtLink to="/register">Mulai</NuxtLink>
+            </Button>
+          </template>
         </div>
       </nav>
     </header>
