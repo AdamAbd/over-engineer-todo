@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -43,22 +43,22 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.961 0.012 91.518);
+  --foreground: oklch(0.231 0.006 91.612);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.527 0.082 188.411);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: oklch(0.699 0.137 68.249);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted: oklch(0.231 0.006 91.612);
+  --muted-foreground: oklch(1 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
+  --border: oklch(0.865 0.023 87.16);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
@@ -74,6 +74,15 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Landing theme tokens */
+  --lp-bg: oklch(0.961 0.012 91.518);
+  --lp-panel: oklch(0.974 0.01 87.471);
+  --lp-ink: oklch(0.231 0.006 91.612);
+  --lp-soft: oklch(0.457 0.012 87.531);
+  --lp-line: oklch(0.865 0.023 87.16);
+  --lp-teal: oklch(0.527 0.082 188.411);
+  --lp-orange: oklch(0.699 0.137 68.249);
 }
 
 .dark {
@@ -108,6 +117,15 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Landing theme tokens (dark) */
+  --lp-bg: oklch(0.204 0.002 106.571);
+  --lp-panel: oklch(0.248 0.004 84.585);
+  --lp-ink: oklch(0.949 0.018 89.359);
+  --lp-soft: oklch(0.757 0.027 84.59);
+  --lp-line: oklch(0.338 0.011 84.592);
+  --lp-teal: oklch(0.704 0.101 186.003);
+  --lp-orange: oklch(0.78 0.121 75.442);
 }
 
 @layer base {
