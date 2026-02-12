@@ -194,7 +194,7 @@
 
     <section id="cta" class="mx-auto mt-16 w-full max-w-6xl md:mt-24">
       <div
-        class="reveal border-border rounded-3xl border bg-muted px-6 py-10 text-center text-white shadow-[0_18px_40px_rgba(20,20,20,0.25)] delay-2 md:px-10"
+        class="reveal border-border bg-muted rounded-3xl border px-6 py-10 text-center text-white shadow-[0_18px_40px_rgba(20,20,20,0.25)] delay-2 md:px-10"
       >
         <h2
           class="font-['Space_Grotesk','Manrope',sans-serif] text-3xl font-bold tracking-tight md:text-4xl"

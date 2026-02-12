@@ -29,7 +29,7 @@
       <slot />
     </main>
 
-    <footer class="relative z-10 border-t border-border px-6 py-8 md:px-10">
+    <footer class="border-border relative z-10 border-t px-6 py-8 md:px-10">
       <div
         class="mx-auto flex w-full max-w-6xl flex-col gap-3 md:flex-row md:items-center md:justify-between"
       >

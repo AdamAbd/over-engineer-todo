@@ -28,6 +28,6 @@ export default defineNuxtConfig({
      * @link https://nuxt.com/docs/api/nuxt-config#alias
      * @default "@/components/ui"
      */
-    componentDir: '@/components/ui'
-  }
+    componentDir: '@/components/ui',
+  },
 })
