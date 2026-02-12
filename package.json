@@ -26,6 +26,7 @@
   "devDependencies": {
     "@nuxt/eslint": "^1.15.1",
     "@nuxt/hints": "^1.0.0-alpha.6",
+    "@nuxt/image": "^2.0.0",
     "@nuxt/test-utils": "^4.0.0",
     "@playwright/test": "^1.58.2",
     "@vitest/coverage-v8": "^4.0.18",

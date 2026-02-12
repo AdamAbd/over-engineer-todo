@@ -7,5 +7,6 @@ export default defineNuxtConfig({
     '@nuxt/hints',
     '@nuxt/test-utils/module',
     '@vueuse/nuxt',
+    '@nuxt/image',
   ],
 })
