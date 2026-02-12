@@ -1,64 +1,89 @@
 <script setup lang="ts">
-  import { toTypedSchema } from '@vee-validate/zod'
-  import { Eye, EyeClosed } from 'lucide-vue-next'
-  import { useForm, Field as VeeField } from 'vee-validate'
-  import { toast } from 'vue-sonner'
-  import { z } from 'zod'
+import { toTypedSchema } from '@vee-validate/zod'
+import { Eye, EyeClosed } from 'lucide-vue-next'
+import { Field as VeeField, useForm } from 'vee-validate'
+import { toast } from 'vue-sonner'
+import { z } from 'zod'
+import { authClient } from '~/lib/auth-client'
 
-  definePageMeta({
-    layout: 'auth',
-  })
+definePageMeta({
+  layout: 'auth',
+})
 
-  useHead({
-    title: 'Register | Over Engineer Todo',
-    meta: [
-      {
-        name: 'description',
-        content: 'Buat akun Over Engineer Todo dan mulai rapikan workflow task kamu.',
-      },
-    ],
-  })
-
-  const formSchema = toTypedSchema(
-    z
-      .object(
-        {
-          name: z.string().min(1, { message: 'Nama tidak boleh kosong' }),
-          email: z.string().email({ message: 'Email tidak valid' }),
-          password: z.string().min(8, { message: 'Password minimal 8 karakter' }),
-          confirmPassword: z.string().min(8, { message: 'Konfirmasi password minimal 8 karakter' }),
-        },
-        {
-          errorMap: (issue, ctx) => {
-            if (issue.code === z.ZodIssueCode.custom && issue.message === 'passwords_must_match') {
-              return { message: 'Password dan konfirmasi password tidak sesuai' }
-            }
-            return { message: ctx.defaultError }
-          },
-        }
-      )
-      .refine((data) => data.password === data.confirmPassword, {
-        message: 'passwords_must_match',
-      })
-  )
-
-  const { handleSubmit } = useForm({
-    validationSchema: formSchema,
-    initialValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
+useHead({
+  title: 'Register | Over Engineer Todo',
+  meta: [
+    {
+      name: 'description',
+      content: 'Buat akun Over Engineer Todo dan mulai rapikan workflow task kamu.',
     },
-  })
+  ],
+})
 
-  const passwordVisible = ref(false)
-  const passwordConfirmVisible = ref(false)
+const formSchema = toTypedSchema(
+  z
+    .object(
+      {
+        name: z.string().min(1, { message: 'Nama tidak boleh kosong' }),
+        email: z.string().email({ message: 'Email tidak valid' }),
+        password: z.string().min(8, { message: 'Password minimal 8 karakter' }),
+        confirmPassword: z.string().min(8, { message: 'Konfirmasi password minimal 8 karakter' }),
+      },
+      {
+        errorMap: (issue, ctx) => {
+          if (issue.code === z.ZodIssueCode.custom && issue.message === 'passwords_must_match') {
+            return { message: 'Password dan konfirmasi password tidak sesuai' }
+          }
+          return { message: ctx.defaultError }
+        },
+      }
+    )
+    .refine((data) => data.password === data.confirmPassword, {
+      message: 'passwords_must_match',
+    })
+)
 
-  const onSubmit = handleSubmit((values) => {
-    // Simulate login process
-    toast.success(`Berhasil login sebagai ${values.email}`)
-  })
+const { handleSubmit } = useForm({
+  validationSchema: formSchema,
+  initialValues: {
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  },
+})
+
+const passwordVisible = ref(false)
+const passwordConfirmVisible = ref(false)
+const isSubmitting = ref(false)
+
+const onSubmit = handleSubmit(async (values) => {
+  if (isSubmitting.value) {
+    return
+  }
+
+  isSubmitting.value = true
+
+  try {
+    const response = await authClient.signUp.email({
+      name: values.name,
+      email: values.email,
+      password: values.password,
+    })
+
+    if (response.error) {
+      toast.error(response.error.message ?? 'Gagal membuat akun')
+      return
+    }
+
+    toast.success(`Akun ${values.email} berhasil dibuat`)
+    await navigateTo('/home')
+  } catch {
+    toast.error('Terjadi kendala saat membuat akun. Coba lagi.')
+  } finally {
+    isSubmitting.value = false
+  }
+})
 </script>
 
 <template>
@@ -117,7 +142,11 @@
                   @update:model-value="field.onChange"
                 />
                 <InputGroupAddon align="inline-end">
-                  <InputGroupButton size="icon-xs" @click="passwordVisible = !passwordVisible">
+                  <InputGroupButton
+                    type="button"
+                    size="icon-xs"
+                    @click="passwordVisible = !passwordVisible"
+                  >
                     <Eye v-if="!passwordVisible" />
                     <EyeClosed v-if="passwordVisible" />
                   </InputGroupButton>
@@ -142,6 +171,7 @@
                 />
                 <InputGroupAddon align="inline-end">
                   <InputGroupButton
+                    type="button"
                     size="icon-xs"
                     @click="passwordConfirmVisible = !passwordConfirmVisible"
                   >
@@ -158,7 +188,9 @@
           Dengan mendaftar, kamu menyetujui ketentuan penggunaan dan kebijakan privasi.
         </p>
 
-        <Button type="submit" class="w-full" size="lg">Buat akun</Button>
+        <Button type="submit" class="w-full" size="lg" :disabled="isSubmitting">
+          {{ isSubmitting ? 'Memproses...' : 'Buat akun' }}
+        </Button>
       </form>
     </CardContent>
 
