@@ -66,8 +66,12 @@
           sedikit context-switch, lebih banyak task yang benar-benar selesai.
         </p>
         <div class="flex flex-wrap items-center gap-3">
-          <Button size="lg">Mulai gratis</Button>
-          <Button variant="outline" size="lg"> Lihat fitur </Button>
+          <Button as-child size="lg">
+            <NuxtLink to="/register">Mulai gratis</NuxtLink>
+          </Button>
+          <Button as-child variant="outline" size="lg">
+            <a href="#fitur">Lihat fitur</a>
+          </Button>
         </div>
         <div class="grid max-w-xl grid-cols-1 gap-3 pt-3 sm:grid-cols-3">
           <article
@@ -204,7 +208,9 @@
         <p class="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/80 md:text-base">
           Coba Over Engineer Todo hari ini dan ubah task list jadi progress nyata tiap minggu.
         </p>
-        <Button variant="secondary" size="lg" class="mt-6">Daftar gratis sekarang</Button>
+        <Button as-child variant="secondary" size="lg" class="mt-6">
+          <NuxtLink to="/register">Daftar gratis sekarang</NuxtLink>
+        </Button>
       </div>
     </section>
   </div>

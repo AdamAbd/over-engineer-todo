@@ -19,8 +19,12 @@
           </p>
         </a>
         <div class="flex items-center gap-2">
-          <Button variant="outline">Login</Button>
-          <Button>Mulai</Button>
+          <Button as-child variant="outline">
+            <NuxtLink to="/login">Login</NuxtLink>
+          </Button>
+          <Button as-child>
+            <NuxtLink to="/register">Mulai</NuxtLink>
+          </Button>
         </div>
       </nav>
     </header>
