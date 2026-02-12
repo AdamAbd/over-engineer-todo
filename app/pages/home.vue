@@ -1,26 +1,7 @@
 <script setup lang="ts">
   import { PencilLine, Plus, Trash2 } from 'lucide-vue-next'
+  import type { TodoFormModel, TodoItem, TodoStatus } from '~/types/todo'
   import { z } from 'zod'
-
-  type TodoStatus = 'backlog' | 'in_progress' | 'done'
-
-  interface TodoItem {
-    id: string
-    title: string
-    description: string
-    status: TodoStatus
-    image_url: string
-    jsonb: unknown
-    created_at: string
-  }
-
-  interface TodoFormModel {
-    title: string
-    description: string
-    status: TodoStatus
-    image_url: string
-    jsonb_text: string
-  }
 
   useHead({
     title: 'Home Todo | Over Engineer Todo',
@@ -246,6 +227,10 @@
     dialogOpen.value = false
   }
 
+  const updateForm = (nextForm: TodoFormModel) => {
+    Object.assign(form, nextForm)
+  }
+
   watch(dialogOpen, (isOpen) => {
     if (!isOpen) {
       formError.value = ''
@@ -257,29 +242,21 @@
   <div class="px-6 pb-16 md:px-10 md:pb-24">
     <section class="mx-auto w-full max-w-6xl pt-6 md:pt-12">
       <div class="reveal space-y-7">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <span
-              class="border-border inline-flex items-center rounded-full border bg-white/80 px-4 py-1 text-xs font-bold tracking-[0.14em] uppercase"
-            >
-              Todo Workspace
-            </span>
-            <h1
-              class="mt-4 font-['Space_Grotesk','Manrope',sans-serif] text-4xl leading-[1.05] font-black tracking-tight text-[var(--lp-ink)] md:text-5xl"
-            >
-              Sprint Board untuk backlog, progress, dan done.
-            </h1>
-            <p class="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--lp-soft)] md:text-base">
-              Tambah atau update todo langsung dari dialog. Setiap todo punya field
-              <code>jsonb</code> dan <code>image_url</code> supaya siap dihubungkan ke backend +
-              CDN.
-            </p>
-          </div>
-
-          <Button size="lg" class="gap-2" @click="openCreateDialog()">
-            <Plus class="size-4" />
-            Tambah Todo
-          </Button>
+        <div class="flex flex-wrap">
+          <span
+            class="border-border inline-flex items-center rounded-full border bg-white/80 px-4 py-1 text-xs font-bold tracking-[0.14em] uppercase"
+          >
+            Todo Workspace
+          </span>
+          <h1
+            class="mt-4 font-['Space_Grotesk','Manrope',sans-serif] text-4xl leading-[1.05] font-black tracking-tight text-[var(--lp-ink)] md:text-5xl"
+          >
+            Sprint Board untuk backlog, progress, dan done.
+          </h1>
+          <p class="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--lp-soft)] md:text-base">
+            Tambah atau update todo langsung dari dialog. Setiap todo punya field
+            <code>jsonb</code> dan <code>image_url</code> supaya siap dihubungkan ke backend + CDN.
+          </p>
         </div>
 
         <div class="grid max-w-2xl grid-cols-2 gap-3">
@@ -403,87 +380,14 @@
       </div>
     </section>
 
-    <Dialog v-model:open="dialogOpen">
-      <DialogContent
-        class="max-h-[85vh] w-full overflow-y-auto border-black/10 bg-white/95 shadow-[0_20px_55px_rgba(20,24,22,0.2)] sm:max-w-2xl"
-      >
-        <DialogHeader>
-          <DialogTitle class="font-['Space_Grotesk','Manrope',sans-serif] text-2xl">
-            {{ dialogMode === 'create' ? 'Tambah Todo Baru' : 'Update Todo' }}
-          </DialogTitle>
-          <DialogDescription>
-            Isi data task, termasuk field JSONB dan image URL untuk preview CDN.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form class="space-y-4" @submit.prevent="submitTodo">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="space-y-2">
-              <Label for="todo-title">Judul</Label>
-              <Input
-                id="todo-title"
-                v-model="form.title"
-                type="text"
-                placeholder="Contoh: Integrasi auth middleware"
-              />
-            </div>
-
-            <div class="space-y-2">
-              <Label for="todo-status">Status</Label>
-              <NativeSelect id="todo-status" v-model="form.status" class="w-full">
-                <option value="backlog">Backlog</option>
-                <option value="in_progress">In Progress</option>
-                <option value="done">Done</option>
-              </NativeSelect>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <Label for="todo-description">Deskripsi</Label>
-            <Textarea
-              id="todo-description"
-              v-model="form.description"
-              placeholder="Catatan singkat task yang mau dikerjakan"
-              class="min-h-24"
-            />
-          </div>
-
-          <div class="space-y-2">
-            <Label for="todo-image-url">Image URL (Cloudflare CDN)</Label>
-            <Input
-              id="todo-image-url"
-              v-model="form.image_url"
-              type="url"
-              placeholder="https://cdn.example.com/todos/card-01.webp"
-            />
-          </div>
-
-          <div class="space-y-2">
-            <Label for="todo-jsonb">JSONB</Label>
-            <Textarea
-              id="todo-jsonb"
-              v-model="form.jsonb_text"
-              placeholder='{"priority":"high","estimate":5}'
-              class="min-h-40 font-mono text-xs"
-            />
-          </div>
-
-          <p
-            v-if="formError"
-            class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {{ formError }}
-          </p>
-
-          <DialogFooter class="gap-2">
-            <Button type="button" variant="outline" @click="dialogOpen = false">Batal</Button>
-            <Button type="submit">
-              {{ dialogMode === 'create' ? 'Simpan Todo' : 'Simpan Perubahan' }}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <TodoDialog
+      v-model:open="dialogOpen"
+      :mode="dialogMode"
+      :form="form"
+      :error="formError"
+      @update:form="updateForm"
+      @submit="submitTodo"
+    />
   </div>
 </template>
 
