@@ -18,6 +18,7 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.15.1",
+    "@nuxt/hints": "^1.0.0-alpha.6",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2"
   }
