@@ -1,12 +1,9 @@
 import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
+import { requireServerConfigValue } from '../lib/server-config'
 import * as schema from './schema'
 
-const databaseUrl = process.env.DATABASE_URL
-
-if (!databaseUrl) {
-  throw new Error('DATABASE_URL is missing')
-}
+const databaseUrl = requireServerConfigValue('DATABASE_URL')
 
 const client = neon(databaseUrl)
 
