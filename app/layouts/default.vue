@@ -55,10 +55,10 @@ const handleLogout = async () => {
           </template>
           <template v-else>
             <Button as-child variant="outline">
-              <NuxtLink to="/login">Login</NuxtLink>
+              <NuxtLink to="/home">Dashboard</NuxtLink>
             </Button>
             <Button as-child>
-              <NuxtLink to="/register">Mulai</NuxtLink>
+              <NuxtLink to="/register">Mulai Gratis</NuxtLink>
             </Button>
           </template>
         </div>

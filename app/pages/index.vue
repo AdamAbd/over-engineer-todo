@@ -69,9 +69,6 @@
           <Button as-child size="lg">
             <NuxtLink to="/register">Mulai gratis</NuxtLink>
           </Button>
-          <Button as-child variant="secondary" size="lg">
-            <NuxtLink to="/home">Lihat Home Todo</NuxtLink>
-          </Button>
           <Button as-child variant="outline" size="lg">
             <a href="#fitur">Lihat fitur</a>
           </Button>
