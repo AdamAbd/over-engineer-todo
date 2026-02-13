@@ -25,7 +25,9 @@
       </div>
     </header>
 
-    <main class="relative z-10 mx-auto flex min-h-[calc(100vh-88px)] w-full max-w-6xl items-center px-6 pb-10 md:px-10">
+    <main
+      class="relative z-10 mx-auto flex min-h-[calc(100vh-88px)] w-full max-w-6xl items-center px-6 pb-10 md:px-10"
+    >
       <section class="hidden max-w-xl space-y-6 md:block">
         <p class="text-sm font-semibold tracking-[0.12em] text-[var(--lp-soft)] uppercase">
           Auth Workspace

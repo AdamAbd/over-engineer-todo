@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { authClient } from '~/lib/auth-client'
+  import { authClient } from '~/lib/auth-client'
 
-const session = authClient.useSession()
-const isSigningOut = ref(false)
+  const session = authClient.useSession()
+  const isSigningOut = ref(false)
 
-const isAuthenticated = computed(() => Boolean(session.value.data?.user))
+  const isAuthenticated = computed(() => Boolean(session.value.data?.user))
 
-const handleLogout = async () => {
-  if (isSigningOut.value) {
-    return
-  }
-
-  isSigningOut.value = true
-
-  try {
-    const response = await authClient.signOut()
-
-    if (response.error) {
+  const handleLogout = async () => {
+    if (isSigningOut.value) {
       return
     }
 
-    await navigateTo('/login')
-  } finally {
-    isSigningOut.value = false
+    isSigningOut.value = true
+
+    try {
+      const response = await authClient.signOut()
+
+      if (response.error) {
+        return
+      }
+
+      await navigateTo('/login')
+    } finally {
+      isSigningOut.value = false
+    }
   }
-}
 </script>
 
 <template>

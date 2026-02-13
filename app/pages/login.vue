@@ -1,70 +1,70 @@
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
-import { Eye, EyeClosed } from 'lucide-vue-next'
-import { Field as VeeField, useForm } from 'vee-validate'
-import { toast } from 'vue-sonner'
-import { z } from 'zod'
-import { Field, FieldGroup, FieldLabel } from '~/components/ui/field'
-import { authClient } from '~/lib/auth-client'
+  import { toTypedSchema } from '@vee-validate/zod'
+  import { Eye, EyeClosed } from 'lucide-vue-next'
+  import { Field as VeeField, useForm } from 'vee-validate'
+  import { toast } from 'vue-sonner'
+  import { z } from 'zod'
+  import { Field, FieldGroup, FieldLabel } from '~/components/ui/field'
+  import { authClient } from '~/lib/auth-client'
 
-definePageMeta({
-  layout: 'auth',
-})
-
-useHead({
-  title: 'Login | Over Engineer Todo',
-  meta: [
-    {
-      name: 'description',
-      content: 'Masuk ke Over Engineer Todo untuk lanjutkan task dan sprint kamu.',
-    },
-  ],
-})
-
-const formSchema = toTypedSchema(
-  z.object({
-    email: z.string().email({ message: 'Email tidak valid' }),
-    password: z.string().min(8, { message: 'Password minimal 8 karakter' }),
+  definePageMeta({
+    layout: 'auth',
   })
-)
 
-const { handleSubmit } = useForm({
-  validationSchema: formSchema,
-  initialValues: {
-    email: '',
-    password: '',
-  },
-})
+  useHead({
+    title: 'Login | Over Engineer Todo',
+    meta: [
+      {
+        name: 'description',
+        content: 'Masuk ke Over Engineer Todo untuk lanjutkan task dan sprint kamu.',
+      },
+    ],
+  })
 
-const passwordVisible = ref(false)
-const isSubmitting = ref(false)
-
-const onSubmit = handleSubmit(async (values) => {
-  if (isSubmitting.value) {
-    return
-  }
-
-  isSubmitting.value = true
-
-  try {
-    const response = await authClient.signIn.email({
-      email: values.email,
-      password: values.password,
+  const formSchema = toTypedSchema(
+    z.object({
+      email: z.string().email({ message: 'Email tidak valid' }),
+      password: z.string().min(8, { message: 'Password minimal 8 karakter' }),
     })
+  )
 
-    if (response.error) {
-      toast.error(response.error.message ?? 'Email atau password tidak valid')
+  const { handleSubmit } = useForm({
+    validationSchema: formSchema,
+    initialValues: {
+      email: '',
+      password: '',
+    },
+  })
+
+  const passwordVisible = ref(false)
+  const isSubmitting = ref(false)
+
+  const onSubmit = handleSubmit(async (values) => {
+    if (isSubmitting.value) {
       return
     }
 
-    toast.success(`Berhasil login sebagai ${values.email}`)
-    await navigateTo('/home')
-  } catch {
-    toast.error('Terjadi kendala saat login. Coba lagi.')
-  } finally {
-    isSubmitting.value = false
-  }
-})
+    isSubmitting.value = true
+
+    try {
+      const response = await authClient.signIn.email({
+        email: values.email,
+        password: values.password,
+      })
+
+      if (response.error) {
+        toast.error(response.error.message ?? 'Email atau password tidak valid')
+        return
+      }
+
+      toast.success(`Berhasil login sebagai ${values.email}`)
+      await navigateTo('/home')
+    } catch {
+      toast.error('Terjadi kendala saat login. Coba lagi.')
+    } finally {
+      isSubmitting.value = false
+    }
+  })
 </script>
 
 <template>
@@ -122,7 +122,10 @@ const onSubmit = handleSubmit(async (values) => {
           </VeeField>
         </FieldGroup>
 
-        <NuxtLink to="/register" class="self-end text-sm font-medium text-foreground hover:underline">
+        <NuxtLink
+          to="/register"
+          class="text-foreground self-end text-sm font-medium hover:underline"
+        >
           Lupa password?
         </NuxtLink>
 
