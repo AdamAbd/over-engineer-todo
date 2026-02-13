@@ -6,6 +6,10 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   nitro: {
     preset: 'cloudflare-module',
+    cloudflare: {
+      deployConfig: true,
+      nodeCompat: true,
+    },
   },
   modules: [
     '@nuxt/eslint',
@@ -39,7 +43,9 @@ export default defineNuxtConfig({
     betterAuthUrl: process.env.BETTER_AUTH_URL,
     upload: {
       imageMaxSizeBytes: Number(process.env.TODO_IMAGE_MAX_SIZE_BYTES ?? 5 * 1024 * 1024),
-      imagePresignExpiresInSeconds: Number(process.env.TODO_IMAGE_PRESIGN_EXPIRES_IN_SECONDS ?? 120),
+      imagePresignExpiresInSeconds: Number(
+        process.env.TODO_IMAGE_PRESIGN_EXPIRES_IN_SECONDS ?? 120
+      ),
       allowedImageMimeTypes:
         process.env.TODO_IMAGE_ALLOWED_MIME_TYPES ??
         'image/jpeg,image/png,image/webp,image/avif,image/gif',
