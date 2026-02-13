@@ -27,6 +27,8 @@ type BunGlobal = {
   }) => BunS3Client
 }
 
+type UploadFileLike = Pick<File, 'name' | 'type'>
+
 const MIME_EXTENSION_MAP: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -200,6 +202,62 @@ const putObjectUsingSignedFetch = async (
   }
 }
 
+const createPresignedPutObjectUrl = (
+  r2: R2AuthConfig,
+  objectKey: string,
+  contentType: string,
+  expiresInSeconds: number
+) => {
+  const url = buildUploadObjectUrl(objectKey, r2)
+  const date = new Date()
+  const amzDate = toAmzDate(date)
+  const dateStamp = toDateStamp(date)
+  const region = r2.region || 'auto'
+  const service = 's3'
+  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`
+  const signedHeaders = 'content-type;host'
+  const canonicalHeaders = `content-type:${contentType}\nhost:${url.host}\n`
+
+  url.searchParams.set('X-Amz-Algorithm', 'AWS4-HMAC-SHA256')
+  url.searchParams.set('X-Amz-Credential', `${r2.accessKeyId}/${credentialScope}`)
+  url.searchParams.set('X-Amz-Date', amzDate)
+  url.searchParams.set('X-Amz-Expires', String(expiresInSeconds))
+  url.searchParams.set('X-Amz-SignedHeaders', signedHeaders)
+
+  const canonicalRequest = [
+    'PUT',
+    url.pathname,
+    buildCanonicalQueryString(url),
+    canonicalHeaders,
+    signedHeaders,
+    'UNSIGNED-PAYLOAD',
+  ].join('\n')
+
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    hashHex(canonicalRequest),
+  ].join('\n')
+
+  const kDate = hmac(`AWS4${r2.secretAccessKey}`, dateStamp)
+  const kRegion = hmac(kDate, region)
+  const kService = hmac(kRegion, service)
+  const kSigning = hmac(kService, 'aws4_request')
+  const signature = createHmac('sha256', kSigning).update(stringToSign).digest('hex')
+
+  url.searchParams.set('X-Amz-Signature', signature)
+
+  return {
+    uploadUrl: url.toString(),
+    expiresAt: new Date(date.getTime() + expiresInSeconds * 1000).toISOString(),
+    method: 'PUT' as const,
+    headers: {
+      'Content-Type': contentType,
+    },
+  }
+}
+
 const buildPublicObjectUrl = (key: string, r2: RuntimeR2Config) => {
   const encodedKey = encodeObjectKey(key)
 
@@ -227,7 +285,7 @@ const buildPublicObjectUrl = (key: string, r2: RuntimeR2Config) => {
   return `${endpoint}/${encodeURIComponent(r2.bucketName)}/${encodedKey}`
 }
 
-const resolveFileExtension = (file: File) => {
+const resolveFileExtension = (file: UploadFileLike) => {
   const byMimeType = MIME_EXTENSION_MAP[file.type]
   if (byMimeType) return byMimeType
 
@@ -237,9 +295,43 @@ const resolveFileExtension = (file: File) => {
   return 'bin'
 }
 
-const buildTodoPhotoObjectKey = (userId: string, file: File) => {
+const buildTodoPhotoObjectKey = (userId: string, file: UploadFileLike) => {
   const extension = resolveFileExtension(file)
   return `todos/${userId}/${Date.now()}-${randomUUID()}.${extension}`
+}
+
+export const createTodoPhotoPresignedUpload = async (
+  userId: string,
+  options: {
+    fileName: string
+    fileType: string
+    expiresInSeconds: number
+  }
+) => {
+  const r2 = getR2Config()
+  const objectKey = buildTodoPhotoObjectKey(userId, {
+    name: options.fileName,
+    type: options.fileType,
+  })
+  const authConfig = {
+    accessKeyId: r2.accessKeyId!,
+    secretAccessKey: r2.secretAccessKey!,
+    endpoint: r2.endpoint!,
+    bucketName: r2.bucketName!,
+    region: r2.region,
+  }
+  const presigned = createPresignedPutObjectUrl(
+    authConfig,
+    objectKey,
+    options.fileType,
+    options.expiresInSeconds
+  )
+
+  return {
+    objectKey,
+    photoUrl: buildPublicObjectUrl(objectKey, r2),
+    ...presigned,
+  }
 }
 
 export const uploadTodoPhotoToR2 = async (userId: string, file: File) => {

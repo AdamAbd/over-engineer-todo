@@ -55,6 +55,17 @@
   const uploadPending = ref(false)
   const fileInputRef = ref<HTMLInputElement | null>(null)
 
+  type PresignedUploadResponse = {
+    uploadUrl: string
+    method: 'PUT'
+    headers: Record<string, string>
+    objectKey: string
+    photoUrl: string
+    expiresAt: string
+    expiresInSeconds: number
+    maxFileSizeBytes: number
+  }
+
   const toUploadErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null) {
       const maybeData = (error as { data?: { statusMessage?: string; message?: string } }).data
@@ -102,18 +113,31 @@
     uploadPending.value = true
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await $fetch<{
-        photoUrl: string
-        objectKey: string
-      }>('/api/upload', {
+      const fileType = file.type || 'application/octet-stream'
+      const presigned = await $fetch<PresignedUploadResponse>('/api/upload/presign', {
         method: 'POST',
-        body: formData,
+        body: {
+          fileName: file.name,
+          fileType,
+          fileSize: file.size,
+        },
       })
 
-      imageUrlValue.value = response.photoUrl
+      const uploadResponse = await fetch(presigned.uploadUrl, {
+        method: presigned.method,
+        headers: presigned.headers,
+        body: file,
+      })
+
+      if (!uploadResponse.ok) {
+        const uploadResponseBody = await uploadResponse.text().catch(() => '')
+        const suffix = uploadResponseBody ? ` ${uploadResponseBody.slice(0, 250)}` : ''
+        throw new Error(
+          `Upload ke storage gagal (${uploadResponse.status} ${uploadResponse.statusText}).${suffix}`
+        )
+      }
+
+      imageUrlValue.value = presigned.photoUrl
     } catch (error) {
       uploadError.value = toUploadErrorMessage(error)
     } finally {
