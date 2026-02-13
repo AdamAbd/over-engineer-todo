@@ -74,8 +74,7 @@
       title: 'Refactor auth flow',
       description: 'Pisahkan handler auth agar login/register lebih mudah dites.',
       status: 'backlog',
-      image_url:
-        'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=900&q=80',
+      image_url: '/assets/scrapbook.webp',
       jsonb: {
         priority: 'high',
         estimate: 5,
@@ -88,8 +87,7 @@
       title: 'Landing page revamp',
       description: 'Rapikan hierarchy konten hero dan optimalkan CTA.',
       status: 'in_progress',
-      image_url:
-        'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80',
+      image_url: '/assets/scrapbook.webp',
       jsonb: {
         owner: 'design',
         sprint: 7,
@@ -102,8 +100,7 @@
       title: 'Setup test suite',
       description: 'Aktifkan test unit + e2e untuk flow login.',
       status: 'done',
-      image_url:
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=900&q=80',
+      image_url: '/assets/scrapbook.webp',
       jsonb: {
         coverage_target: 80,
         ci: true,
