@@ -49,6 +49,86 @@
   const closeDialog = () => {
     emit('update:open', false)
   }
+
+  const selectedFileName = ref('')
+  const uploadError = ref('')
+  const uploadPending = ref(false)
+  const fileInputRef = ref<HTMLInputElement | null>(null)
+
+  const toUploadErrorMessage = (error: unknown) => {
+    if (typeof error === 'object' && error !== null) {
+      const maybeData = (error as { data?: { statusMessage?: string; message?: string } }).data
+      if (maybeData?.statusMessage) {
+        return maybeData.statusMessage
+      }
+      if (maybeData?.message) {
+        return maybeData.message
+      }
+
+      const maybeStatusMessage = (error as { statusMessage?: string }).statusMessage
+      if (maybeStatusMessage) {
+        return maybeStatusMessage
+      }
+
+      const maybeMessage = (error as { message?: string }).message
+      if (maybeMessage) {
+        return maybeMessage
+      }
+    }
+
+    return 'Upload gambar gagal. Coba lagi.'
+  }
+
+  const resetUploadState = () => {
+    selectedFileName.value = ''
+    uploadError.value = ''
+    uploadPending.value = false
+    if (fileInputRef.value) {
+      fileInputRef.value.value = ''
+    }
+  }
+
+  const uploadImage = async (event: Event) => {
+    const target = event.target as HTMLInputElement
+    const file = target.files?.[0]
+    uploadError.value = ''
+
+    if (!file) {
+      selectedFileName.value = ''
+      return
+    }
+
+    selectedFileName.value = file.name
+    uploadPending.value = true
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await $fetch<{
+        photoUrl: string
+        objectKey: string
+      }>('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      imageUrlValue.value = response.photoUrl
+    } catch (error) {
+      uploadError.value = toUploadErrorMessage(error)
+    } finally {
+      uploadPending.value = false
+    }
+  }
+
+  watch(
+    () => props.open,
+    (isOpen) => {
+      if (!isOpen) {
+        resetUploadState()
+      }
+    }
+  )
 </script>
 
 <template>
@@ -105,6 +185,24 @@
             type="url"
             placeholder="https://cdn.example.com/todos/card-01.webp"
           />
+          <div class="space-y-2">
+            <Label for="todo-image-upload">Upload Gambar</Label>
+            <Input
+              id="todo-image-upload"
+              ref="fileInputRef"
+              type="file"
+              accept="image/*"
+              :disabled="uploadPending"
+              @change="uploadImage"
+            />
+            <p v-if="selectedFileName" class="text-xs text-[#5a5a5a]">
+              File dipilih: {{ selectedFileName }}
+            </p>
+            <p v-if="uploadPending" class="text-xs text-[#3f3f3f]">Mengunggah gambar...</p>
+            <p v-if="uploadError" class="text-xs text-red-700">
+              {{ uploadError }}
+            </p>
+          </div>
         </div>
 
         <div class="space-y-2">
@@ -126,7 +224,7 @@
 
         <DialogFooter class="gap-2">
           <Button type="button" variant="outline" @click="closeDialog">Batal</Button>
-          <Button type="submit">
+          <Button type="submit" :disabled="uploadPending">
             {{ props.mode === 'create' ? 'Simpan Todo' : 'Simpan Perubahan' }}
           </Button>
         </DialogFooter>

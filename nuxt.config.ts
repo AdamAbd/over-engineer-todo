@@ -37,6 +37,13 @@ export default defineNuxtConfig({
     databaseUrl: process.env.DATABASE_URL,
     betterAuthSecret: process.env.BETTER_AUTH_SECRET,
     betterAuthUrl: process.env.BETTER_AUTH_URL,
+    upload: {
+      imageMaxSizeBytes: Number(process.env.TODO_IMAGE_MAX_SIZE_BYTES ?? 5 * 1024 * 1024),
+      imagePresignExpiresInSeconds: Number(process.env.TODO_IMAGE_PRESIGN_EXPIRES_IN_SECONDS ?? 120),
+      allowedImageMimeTypes:
+        process.env.TODO_IMAGE_ALLOWED_MIME_TYPES ??
+        'image/jpeg,image/png,image/webp,image/avif,image/gif',
+    },
     r2: {
       accessKeyId: process.env.R2_ACCESS_KEY_ID,
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
