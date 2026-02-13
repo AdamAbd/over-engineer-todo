@@ -50,15 +50,6 @@ const getR2Config = () => {
   return r2
 }
 
-type BunModule = {
-  S3Client?: new (options: {
-    accessKeyId: string
-    secretAccessKey: string
-    endpoint: string
-    bucket: string
-  }) => BunS3Client
-}
-
 type R2AuthConfig = Required<
   Pick<RuntimeR2Config, 'accessKeyId' | 'secretAccessKey' | 'endpoint' | 'bucketName'>
 > &
@@ -86,16 +77,6 @@ const getBunS3Client = async (
   const bun = (globalThis as typeof globalThis & { Bun?: BunGlobal }).Bun
   if (bun?.S3Client) {
     return createS3Client(bun.S3Client, r2)
-  }
-
-  try {
-    // Fallback untuk beberapa mode runtime yang tidak mengekspos globalThis.Bun.
-    const bunModule = (await import('bun')) as BunModule
-    if (bunModule.S3Client) {
-      return createS3Client(bunModule.S3Client, r2)
-    }
-  } catch {
-    // ignore: fallback ke upload signed fetch
   }
 
   return null
