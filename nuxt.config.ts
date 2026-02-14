@@ -7,11 +7,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: isDev },
   nitro: {
-    preset: 'cloudflare-module',
-    cloudflare: {
-      deployConfig: true,
-      nodeCompat: true,
-    },
+    preset: 'netlify',
   },
   routeRules: {
     '/': { prerender: true },
