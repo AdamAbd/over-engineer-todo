@@ -73,9 +73,7 @@ const createS3Client = (
     bucket: r2.bucketName,
   })
 
-const getBunS3Client = async (
-  r2: R2AuthConfig
-) => {
+const getBunS3Client = async (r2: R2AuthConfig) => {
   const bun = (globalThis as typeof globalThis & { Bun?: BunGlobal }).Bun
   if (bun?.S3Client) {
     return createS3Client(bun.S3Client, r2)
@@ -87,7 +85,8 @@ const getBunS3Client = async (
 const encodeObjectKey = (key: string) => key.split('/').map(encodeURIComponent).join('/')
 
 const hashHex = (value: string | Buffer) => createHash('sha256').update(value).digest('hex')
-const hmac = (key: Buffer | string, value: string) => createHmac('sha256', key).update(value).digest()
+const hmac = (key: Buffer | string, value: string) =>
+  createHmac('sha256', key).update(value).digest()
 
 const toAmzDate = (date: Date) => date.toISOString().replace(/[:-]|\.\d{3}/g, '')
 const toDateStamp = (date: Date) => toAmzDate(date).slice(0, 8)
@@ -128,11 +127,7 @@ const buildUploadObjectUrl = (key: string, r2: RuntimeR2Config) => {
   return url
 }
 
-const putObjectUsingSignedFetch = async (
-  r2: R2AuthConfig,
-  objectKey: string,
-  file: File
-) => {
+const putObjectUsingSignedFetch = async (r2: R2AuthConfig, objectKey: string, file: File) => {
   const url = buildUploadObjectUrl(objectKey, r2)
   const payloadBuffer = Buffer.from(await file.arrayBuffer())
   const payloadHash = hashHex(payloadBuffer)
@@ -150,9 +145,7 @@ const putObjectUsingSignedFetch = async (
     'x-amz-date': amzDate,
   }
 
-  const sortedHeaderEntries = Object.entries(requestHeaders).sort(([a], [b]) =>
-    a.localeCompare(b)
-  )
+  const sortedHeaderEntries = Object.entries(requestHeaders).sort(([a], [b]) => a.localeCompare(b))
   const canonicalHeaders = sortedHeaderEntries.map(([key, value]) => `${key}:${value}\n`).join('')
   const signedHeaders = sortedHeaderEntries.map(([key]) => key).join(';')
 
@@ -295,13 +288,14 @@ const resolveFileExtension = (file: UploadFileLike) => {
   return 'bin'
 }
 
-const buildTodoPhotoObjectKey = (userId: string, file: UploadFileLike) => {
+const buildR2ObjectKey = (userId: string, category: string, file: UploadFileLike) => {
   const extension = resolveFileExtension(file)
-  return `todos/${userId}/${Date.now()}-${randomUUID()}.${extension}`
+  return `${category}/${userId}/${Date.now()}-${randomUUID()}.${extension}`
 }
 
-export const createTodoPhotoPresignedUpload = async (
+export const createR2PresignedUpload = async (
   userId: string,
+  category: string,
   options: {
     fileName: string
     fileType: string
@@ -309,7 +303,7 @@ export const createTodoPhotoPresignedUpload = async (
   }
 ) => {
   const r2 = getR2Config()
-  const objectKey = buildTodoPhotoObjectKey(userId, {
+  const objectKey = buildR2ObjectKey(userId, category, {
     name: options.fileName,
     type: options.fileType,
   })
@@ -334,9 +328,9 @@ export const createTodoPhotoPresignedUpload = async (
   }
 }
 
-export const uploadTodoPhotoToR2 = async (userId: string, file: File) => {
+export const uploadFileToR2 = async (userId: string, category: string, file: File) => {
   const r2 = getR2Config()
-  const objectKey = buildTodoPhotoObjectKey(userId, file)
+  const objectKey = buildR2ObjectKey(userId, category, file)
   const authConfig = {
     accessKeyId: r2.accessKeyId!,
     secretAccessKey: r2.secretAccessKey!,

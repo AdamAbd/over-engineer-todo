@@ -1,5 +1,6 @@
 import { createError, readBody } from 'h3'
-import { createTodoPhotoPresignedUpload } from '#server/lib/r2'
+import { createR2PresignedUpload } from '#server/lib/r2'
+import { auth } from '#server/lib/auth'
 
 const MAX_PRESIGN_EXPIRES_SECONDS = 60 * 60 * 24 * 7
 
@@ -13,6 +14,7 @@ type PresignRequestBody = {
   fileName?: string
   fileType?: string
   fileSize?: number
+  category?: string
 }
 
 const parseAllowedMimeTypes = (mimeTypes: string | undefined) =>
@@ -29,10 +31,22 @@ const clampExpires = (expiresInSeconds: number) =>
   Math.min(Math.max(Math.floor(expiresInSeconds), 1), MAX_PRESIGN_EXPIRES_SECONDS)
 
 export default defineEventHandler(async (event) => {
+  const session = await auth.api.getSession({
+    headers: event.headers,
+  })
+
+  if (!session) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized',
+    })
+  }
+
   const body = await readBody<PresignRequestBody>(event)
   const fileName = typeof body?.fileName === 'string' ? normalizeFileName(body.fileName) : ''
   const fileType = typeof body?.fileType === 'string' ? body.fileType.trim().toLowerCase() : ''
   const fileSize = typeof body?.fileSize === 'number' ? body.fileSize : Number.NaN
+  const category = typeof body?.category === 'string' ? body.category.trim().toLowerCase() : 'todos'
 
   if (!fileName) {
     throw createError({
@@ -82,7 +96,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const signedUpload = await createTodoPhotoPresignedUpload('abc123', {
+  const signedUpload = await createR2PresignedUpload(session.user.id, category, {
     fileName,
     fileType,
     expiresInSeconds: presignExpires,

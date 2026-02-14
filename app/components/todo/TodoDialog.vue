@@ -120,6 +120,7 @@
           fileName: file.name,
           fileType,
           fileSize: file.size,
+          category: 'todos',
         },
       })
 
