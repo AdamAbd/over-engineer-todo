@@ -5,6 +5,9 @@ compatibility_flags = ["nodejs_compat"]
 
 assets = { directory = "./.output/public" }
 
+[vars]
+AUTH_FAST_PASSWORD_HASH = "true"
+
 [observability]
 [observability.logs]
 enabled = false

@@ -47,6 +47,9 @@ export default defineNuxtConfig({
     databaseUrl: process.env.DATABASE_URL,
     betterAuthSecret: process.env.BETTER_AUTH_SECRET,
     betterAuthUrl: process.env.BETTER_AUTH_URL,
+    auth: {
+      fastPasswordHash: process.env.AUTH_FAST_PASSWORD_HASH === 'true',
+    },
     upload: {
       imageMaxSizeBytes: Number(process.env.TODO_IMAGE_MAX_SIZE_BYTES ?? 5 * 1024 * 1024),
       imagePresignExpiresInSeconds: Number(
