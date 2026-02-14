@@ -59,7 +59,7 @@
       }
 
       toast.success(`Berhasil login sebagai ${values.email}`)
-      await navigateTo('/home')
+      await navigateTo('/home', { external: true })
     } catch {
       toast.error('Terjadi kendala saat login. Coba lagi.')
     } finally {

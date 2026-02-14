@@ -20,7 +20,7 @@
         return
       }
 
-      await navigateTo('/login')
+      await navigateTo('/login', { external: true })
     } finally {
       isSigningOut.value = false
     }

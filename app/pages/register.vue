@@ -78,7 +78,7 @@
       }
 
       toast.success(`Akun ${values.email} berhasil dibuat`)
-      await navigateTo('/home')
+      await navigateTo('/home', { external: true })
     } catch {
       toast.error('Terjadi kendala saat membuat akun. Coba lagi.')
     } finally {
