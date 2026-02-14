@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { boolean, index, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -66,4 +66,28 @@ export const verification = pgTable(
     updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('verification_identifier_idx').on(table.identifier)]
+)
+
+export const todo = pgTable(
+  'todo',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description').notNull().default(''),
+    status: text('status', { enum: ['backlog', 'in_progress', 'done'] })
+      .notNull()
+      .default('backlog'),
+    image_url: text('image_url'),
+    jsonb: jsonb('jsonb'),
+    created_at: timestamp('created_at', { mode: 'date', withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { mode: 'date', withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index('todo_user_id_idx').on(table.userId)]
 )
