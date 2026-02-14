@@ -72,46 +72,28 @@
       }, 'Field JSONB harus berformat JSON valid'),
   })
 
-  const todos = ref<TodoItem[]>([
-    {
-      id: crypto.randomUUID(),
-      title: 'Refactor auth flow',
-      description: 'Pisahkan handler auth agar login/register lebih mudah dites.',
-      status: 'backlog',
-      image_url: '/assets/scrapbook.webp',
-      jsonb: {
-        priority: 'high',
-        estimate: 5,
-        tags: ['auth', 'refactor'],
-      },
-      created_at: new Date().toISOString(),
+  const page = ref(1)
+  const limit = ref(12)
+  const search = ref('')
+  const sort = ref('created_at')
+  const order = ref<'asc' | 'desc'>('desc')
+
+  const {
+    data: todoResponse,
+    refresh: refreshTodos,
+    status: fetchStatus,
+  } = await useFetch('/api/todo', {
+    query: {
+      page,
+      limit,
+      search,
+      sort,
+      order,
     },
-    {
-      id: crypto.randomUUID(),
-      title: 'Landing page revamp',
-      description: 'Rapikan hierarchy konten hero dan optimalkan CTA.',
-      status: 'in_progress',
-      image_url: '/assets/scrapbook.webp',
-      jsonb: {
-        owner: 'design',
-        sprint: 7,
-        checkpoints: ['hero', 'stats', 'cta'],
-      },
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: crypto.randomUUID(),
-      title: 'Setup test suite',
-      description: 'Aktifkan test unit + e2e untuk flow login.',
-      status: 'done',
-      image_url: '/assets/scrapbook.webp',
-      jsonb: {
-        coverage_target: 80,
-        ci: true,
-      },
-      created_at: new Date().toISOString(),
-    },
-  ])
+    watch: [page, search, sort, order],
+  })
+
+  const todos = computed(() => todoResponse.value?.items ?? [])
 
   const dialogOpen = ref(false)
   const dialogMode = ref<'create' | 'edit'>('create')
@@ -134,7 +116,7 @@
     }))
   )
 
-  const totalTodos = computed(() => todos.value.length)
+  const totalTodos = computed(() => todoResponse.value?.pagination.total ?? 0)
   const doneCount = computed(() => todos.value.filter((todo) => todo.status === 'done').length)
 
   const formatJsonb = (value: unknown) => JSON.stringify(value, null, 2)
@@ -177,17 +159,26 @@
     form.title = todo.title
     form.description = todo.description
     form.status = todo.status
-    form.image_url = todo.image_url
+    form.image_url = todo.image_url ?? ''
     form.jsonb_text = formatJsonb(todo.jsonb)
     formError.value = ''
     dialogOpen.value = true
   }
 
-  const removeTodo = (todoId: string) => {
-    todos.value = todos.value.filter((todo) => todo.id !== todoId)
+  const removeTodo = async (todoId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus todo ini?')) return
+
+    try {
+      await $fetch(`/api/todo/${todoId}`, {
+        method: 'DELETE',
+      })
+      await refreshTodos()
+    } catch (e: any) {
+      console.error('Gagal menghapus todo:', e)
+    }
   }
 
-  const submitTodo = () => {
+  const submitTodo = async () => {
     const parsedForm = todoFormSchema.safeParse(form)
     if (!parsedForm.success) {
       formError.value = parsedForm.error.issues[0]?.message ?? 'Form todo tidak valid'
@@ -196,36 +187,36 @@
 
     const parsedJsonb = JSON.parse(parsedForm.data.jsonb_text)
 
-    if (dialogMode.value === 'create') {
-      const newTodo: TodoItem = {
-        id: crypto.randomUUID(),
-        title: parsedForm.data.title,
-        description: parsedForm.data.description,
-        status: parsedForm.data.status,
-        image_url: parsedForm.data.image_url,
-        jsonb: parsedJsonb,
-        created_at: new Date().toISOString(),
+    try {
+      if (dialogMode.value === 'create') {
+        await $fetch('/api/todo', {
+          method: 'POST',
+          body: {
+            title: parsedForm.data.title,
+            description: parsedForm.data.description,
+            status: parsedForm.data.status,
+            image_url: parsedForm.data.image_url,
+            jsonb: parsedJsonb,
+          },
+        })
+      } else if (editingTodoId.value) {
+        await $fetch(`/api/todo/${editingTodoId.value}`, {
+          method: 'PATCH',
+          body: {
+            title: parsedForm.data.title,
+            description: parsedForm.data.description,
+            status: parsedForm.data.status,
+            image_url: parsedForm.data.image_url,
+            jsonb: parsedJsonb,
+          },
+        })
       }
 
-      todos.value = [newTodo, ...todos.value]
-    } else if (editingTodoId.value) {
-      todos.value = todos.value.map((todo) => {
-        if (todo.id !== editingTodoId.value) {
-          return todo
-        }
-
-        return {
-          ...todo,
-          title: parsedForm.data.title,
-          description: parsedForm.data.description,
-          status: parsedForm.data.status,
-          image_url: parsedForm.data.image_url,
-          jsonb: parsedJsonb,
-        }
-      })
+      await refreshTodos()
+      dialogOpen.value = false
+    } catch (e: any) {
+      formError.value = e.data?.message || e.message || 'Gagal menyimpan todo'
     }
-
-    dialogOpen.value = false
   }
 
   const updateForm = (nextForm: TodoFormModel) => {
@@ -260,23 +251,39 @@
           </p>
         </div>
 
-        <div class="grid max-w-2xl grid-cols-2 gap-3">
-          <article class="border-border rounded-2xl border bg-white/70 px-4 py-3 backdrop-blur-sm">
-            <p
-              class="font-['Space_Grotesk','Manrope',sans-serif] text-2xl font-bold text-[var(--lp-ink)]"
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="grid w-full max-w-2xl grid-cols-2 gap-3">
+            <article
+              class="border-border rounded-2xl border bg-white/70 px-4 py-3 backdrop-blur-sm"
             >
-              {{ totalTodos }}
-            </p>
-            <p class="text-xs leading-tight text-[var(--lp-soft)]">Total todo aktif</p>
-          </article>
-          <article class="border-border rounded-2xl border bg-white/70 px-4 py-3 backdrop-blur-sm">
-            <p
-              class="font-['Space_Grotesk','Manrope',sans-serif] text-2xl font-bold text-[var(--lp-ink)]"
+              <p
+                class="font-['Space_Grotesk','Manrope',sans-serif] text-2xl font-bold text-[var(--lp-ink)]"
+              >
+                {{ totalTodos }}
+              </p>
+              <p class="text-xs leading-tight text-[var(--lp-soft)]">Total todo aktif</p>
+            </article>
+            <article
+              class="border-border rounded-2xl border bg-white/70 px-4 py-3 backdrop-blur-sm"
             >
-              {{ doneCount }}
-            </p>
-            <p class="text-xs leading-tight text-[var(--lp-soft)]">Todo selesai</p>
-          </article>
+              <p
+                class="font-['Space_Grotesk','Manrope',sans-serif] text-2xl font-bold text-[var(--lp-ink)]"
+              >
+                {{ doneCount }}
+              </p>
+              <p class="text-xs leading-tight text-[var(--lp-soft)]">Todo selesai</p>
+            </article>
+          </div>
+
+          <div class="w-full max-w-xs">
+            <Input
+              v-model="search"
+              type="text"
+              placeholder="Cari todo..."
+              class="rounded-xl bg-white/50 backdrop-blur-sm"
+              @input="page = 1"
+            />
+          </div>
         </div>
       </div>
     </section>
@@ -309,14 +316,14 @@
                 </h2>
                 <p class="text-xs" :class="column.accentClass">{{ column.items.length }} item</p>
               </div>
-              <Button
+              <button
                 size="icon-sm"
                 variant="secondary"
-                class="bg-white/90 text-black hover:bg-white"
+                class="inline-flex size-8 items-center justify-center rounded-lg bg-white/90 text-black hover:bg-white"
                 @click="openCreateDialog(column.status)"
               >
                 <Plus class="size-4" />
-              </Button>
+              </button>
             </div>
 
             <div class="space-y-3">
@@ -377,6 +384,34 @@
               </article>
             </div>
           </section>
+        </div>
+
+        <!-- Pagination -->
+        <div
+          v-if="todoResponse?.pagination && todoResponse.pagination.totalPages > 1"
+          class="mt-8 flex items-center justify-center gap-2 border-t border-white/10 pt-6"
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="page === 1"
+            class="bg-white/10 text-white hover:bg-white/20"
+            @click="page--"
+          >
+            Prev
+          </Button>
+          <span class="text-xs text-white/70">
+            Halaman {{ page }} dari {{ todoResponse.pagination.totalPages }}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="page >= todoResponse.pagination.totalPages"
+            class="bg-white/10 text-white hover:bg-white/20"
+            @click="page++"
+          >
+            Next
+          </Button>
         </div>
       </div>
     </section>

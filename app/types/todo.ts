@@ -5,7 +5,7 @@ export interface TodoItem {
   title: string
   description: string
   status: TodoStatus
-  image_url: string
+  image_url: string | null
   jsonb: unknown
   created_at: string
 }
