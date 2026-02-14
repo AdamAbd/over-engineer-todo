@@ -8,6 +8,7 @@
 
   definePageMeta({
     layout: 'auth',
+    middleware: 'guest',
   })
 
   useHead({

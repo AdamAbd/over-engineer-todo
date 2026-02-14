@@ -1,4 +1,8 @@
 <script setup lang="ts">
+  definePageMeta({
+    middleware: 'auth',
+  })
+
   import { PencilLine, Plus, Trash2 } from 'lucide-vue-next'
   import type { TodoFormModel, TodoItem, TodoStatus } from '~/types/todo'
   import { z } from 'zod'

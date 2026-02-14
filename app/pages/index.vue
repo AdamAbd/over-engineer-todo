@@ -1,4 +1,8 @@
 <script setup lang="ts">
+  definePageMeta({
+    middleware: 'guest',
+  })
+
   useHead({
     title: 'Over Engineer Todo | Todo App for Builders',
     meta: [
