@@ -1,9 +1,11 @@
 import tailwindcss from '@tailwindcss/vite'
 
+const isDev = process.env.NODE_ENV !== 'production'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  devtools: { enabled: isDev },
   nitro: {
     preset: 'cloudflare-module',
     cloudflare: {
@@ -11,10 +13,14 @@ export default defineNuxtConfig({
       nodeCompat: true,
     },
   },
+  routeRules: {
+    '/': { prerender: true },
+    '/login': { prerender: true },
+    '/register': { prerender: true },
+    '/home': { ssr: false },
+  },
   modules: [
-    '@nuxt/eslint',
-    '@nuxt/hints',
-    '@nuxt/test-utils/module',
+    ...(isDev ? ['@nuxt/eslint', '@nuxt/hints', '@nuxt/test-utils/module'] : []),
     '@vueuse/nuxt',
     '@nuxt/image',
     'shadcn-nuxt',
